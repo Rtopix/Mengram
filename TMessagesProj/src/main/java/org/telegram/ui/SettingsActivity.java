@@ -678,6 +678,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asShadow(null));
         }
 
+        items.add(SettingCell.Factory.of(999, 0xFF2196F3, 0xFF1976D2, R.drawable.msg_settings, "Настройки Mengram", "Профессиональный обход блокировок"));
         items.add(SettingCell.Factory.of(1, 0xFF1CA5ED, 0xFF1488E1, R.drawable.settings_account, getString(R.string.SettingsAccount), getString(R.string.SettingsAccountInfo)));
         items.add(SettingCell.Factory.of(2, 0xFFF09F1B, 0xFFE18A11, R.drawable.settings_chat, getString(R.string.SettingsChat), getString(R.string.SettingsChatInfo)));
         items.add(SettingCell.Factory.of(3, 0xFF55CA47, 0xFF27B434, R.drawable.settings_privacy, getString(R.string.SettingsPrivacySecurity), getString(R.string.SettingsPrivacySecurityInfo)));
@@ -810,6 +811,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 10:
                 presentFragment(new LanguageSelectActivity());
+                break;
+
+            case 999:
+                presentFragment(new MengramSettingsActivity());
                 break;
 
             case 11:

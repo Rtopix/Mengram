@@ -14,6 +14,8 @@ import static org.telegram.messenger.AndroidUtilities.replaceSingleTag;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.messenger.MessagesController.findUpdatesAndRemove;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.MengramProxyEngine;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -527,8 +529,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public boolean onFragmentCreate() {
+
         getNotificationCenter().addObserver(this, NotificationCenter.didUpdateConnectionState);
         getNotificationCenter().addObserver(this, NotificationCenter.newSuggestionsAvailable);
+
+        android.content.SharedPreferences preferences = org.telegram.messenger.MessagesController.getGlobalMainSettings();
+        if (!preferences.getBoolean("proxy_enabled", false)) {
+            org.telegram.messenger.MengramProxyEngine.getInstance().refreshProxyList();
+        }
+
         return super.onFragmentCreate();
     }
 
