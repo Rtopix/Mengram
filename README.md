@@ -1,39 +1,31 @@
-## Telegram messenger for Android
+Mengram — это модифицированный клиент Telegram для Android, построенный на базе официального открытого кода (TMessagesProj). Основная цель проекта — автоматизация обхода сетевых ограничений и повышение стабильности соединения без необходимости ручной настройки. Основные изменения и функции Интеллектуальный движок прокси
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+В клиент интегрирован механизм автоматического управления MTProto-соединениями:
 
-## Creating your Telegram Application
+Автоматический поиск: Приложение самостоятельно загружает и проверяет актуальные FakeTLS прокси из проверенных источников.
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+Ротация при потере связи: Если текущий узел перестает отвечать или выдает ошибки протокола, система автоматически переключается на следующий рабочий адрес.
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+Параллельный пинг: Проверка доступности узлов происходит в несколько потоков, что позволяет выбрать сервер с минимальной задержкой.
 
-### API, Protocol documentation
+Настройка тайм-аута: В меню настроек Mengram пользователь может сам установить время ожидания ответа (кулдаун), после которого произойдет смена прокси.
 
-Telegram API manuals: https://core.telegram.org/api
+Интерфейс и удобство
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
+Доступность при регистрации: Движок обхода ограничений может быть активирован уже на этапе ввода номера телефона, что позволяет авторизоваться в сервисе даже при полной блокировке ресурсов Telegram провайдером.
 
-### Compilation Guide
+Технические подробности
 
-**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
+Проект поддерживает все актуальные архитектуры (arm64-v8a, armeabi-v7a, x86, x86_64) и требует для сборки Android Studio с установленным NDK.
 
-You will require Android Studio 3.4, Android NDK rev. 20 and Android SDK 8.1
+Инструкция по сборке:
 
-1. Download the Telegram source code from https://github.com/DrKLO/Telegram ( git clone https://github.com/DrKLO/Telegram.git )
-2. Copy your release.keystore into TMessagesProj/config
-3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
-4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
-5. Open the project in the Studio (note that it should be opened, NOT imported).
-6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
-7. You are ready to compile Telegram.
+Клонировать репозиторий.
 
-### Localization
+Указать свои APP_ID и APP_HASH в файле BuildVars.java.
 
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+Выполнить сборку через Gradle (./gradlew assembleRelease).
+
+Лицензия
+
+Проект распространяется на условиях лицензии GNU GPL версии 2.0. Это означает, что исходный код Mengram всегда будет открыт для изучения и модификации. Любые производные продукты также должны сохранять эту лицензию и оставаться открытыми.
