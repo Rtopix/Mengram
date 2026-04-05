@@ -49,6 +49,8 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
         return super.onFragmentCreate();
     }
 
+    // настры:::
+
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
@@ -79,7 +81,7 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
             } else if (position == cooldownRow) {
                 showCooldownDialog();
             } else if (position == quicRow) {
-                Toast.makeText(context, "Функция в разработке", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Функция в разработке", Toast.LENGTH_SHORT).show(); //доделать потом
             }
         });
 
