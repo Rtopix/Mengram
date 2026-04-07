@@ -527,8 +527,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public boolean onFragmentCreate() {
+
         getNotificationCenter().addObserver(this, NotificationCenter.didUpdateConnectionState);
         getNotificationCenter().addObserver(this, NotificationCenter.newSuggestionsAvailable);
+
+        android.content.SharedPreferences preferences = org.telegram.messenger.MessagesController.getGlobalMainSettings();
+        if (!preferences.getBoolean("proxy_enabled", false)) {
+            org.telegram.messenger.MengramProxyEngine.getInstance().refreshProxyList();
+        }
+
         return super.onFragmentCreate();
     }
 
