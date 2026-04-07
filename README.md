@@ -1,39 +1,24 @@
-## Telegram messenger for Android
+Mengram
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+Mengram — это модифицированная версия официального клиента Telegram для Android, построенная на актуальной базе исходного кода (DrKLO/Telegram). Основная цель проекта — обеспечить стабильную связь в регионах с нестабильным доступом к сети без необходимости ручного поиска прокси-серверов.
+Основные особенности
 
-## Creating your Telegram Application
+    MengramProxyEngine: Встроенный движок для автоматического поиска и проверки MTProto-прокси.
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+    Автоматическая ротация: Система мониторинга состояния сети, которая автоматически переключает прокси-сервер, если текущее соединение прервано или замедлено.
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+    Поддержка современных протоколов: Парсинг и поддержка FakeTLS (секреты с префиксом ee) для обхода глубокой фильтрации трафика (DPI).
 
-### API, Protocol documentation
+    Многопоточная проверка: Быстрый перебор сотен доступных узлов для выбора наиболее качественного соединения с минимальным пингом.
 
-Telegram API manuals: https://core.telegram.org/api
+    Интеграция в процесс авторизации: Движок начинает поиск прокси уже на экране ввода номера телефона, позволяя войти в аккаунт без использования сторонних VPN-сервисов.
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
+Разработка и использование
 
-### Compilation Guide
+Код данного проекта предоставляется "как есть". Вы можете свободно использовать, копировать, модифицировать и распространять любые части кода Mengram для своих собственных нужд или форков без каких-либо ограничений.
+Установка и сборка
 
-**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
+Проект собирается стандартными средствами Android Studio и Gradle. Для сборки используйте:
+./gradlew assembleAfatDebug (или соответствующий flavor).
 
-You will require Android Studio 3.4, Android NDK rev. 20 and Android SDK 8.1
-
-1. Download the Telegram source code from https://github.com/DrKLO/Telegram ( git clone https://github.com/DrKLO/Telegram.git )
-2. Copy your release.keystore into TMessagesProj/config
-3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
-4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
-5. Open the project in the Studio (note that it should be opened, NOT imported).
-6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
-7. You are ready to compile Telegram.
-
-### Localization
-
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+Проект основан на официальном исходном коде Telegram для Android.
