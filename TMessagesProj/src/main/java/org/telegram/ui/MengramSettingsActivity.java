@@ -2,6 +2,11 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.view.View;
@@ -10,8 +15,13 @@ import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.ByeDpiService;
 import org.telegram.messenger.MengramProxyEngine;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -81,7 +91,33 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
             } else if (position == cooldownRow) {
                 showCooldownDialog();
             } else if (position == quicRow) {
-                Toast.makeText(context, "Функция в разработке", Toast.LENGTH_SHORT).show();
+                boolean isEnabled = !ApplicationLoader.applicationContext
+                        .getSharedPreferences("mengram_settings", 0)
+                        .getBoolean("byedpi_enabled", false);
+
+                ApplicationLoader.applicationContext
+                        .getSharedPreferences("mengram_settings", 0)
+                        .edit()
+                        .putBoolean("byedpi_enabled", isEnabled)
+                        .apply();
+
+                if (isEnabled) {
+                    checkBatteryOptimization();
+
+                    Intent intent = new Intent(context, ByeDpiService.class);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startForegroundService(intent);
+                    } else {
+                        context.startService(intent);
+                    }
+
+                    Toast.makeText(context, "Обход (DPI Jammer) включен", Toast.LENGTH_SHORT).show();
+                } else {
+                    context.stopService(new Intent(context, ByeDpiService.class));
+                    Toast.makeText(context, "Обход выключен", Toast.LENGTH_SHORT).show();
+                }
+
+                listAdapter.notifyItemChanged(quicRow);
             }
         });
 
@@ -90,6 +126,32 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
         ((FrameLayout) fragmentView).addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         return fragmentView;
+    }
+
+    private void checkBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PowerManager pm = (PowerManager) getParentActivity().getSystemService(Context.POWER_SERVICE);
+            String packageName = getParentActivity().getPackageName();
+
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                new AlertDialog.Builder(getParentActivity())
+                    .setTitle("Требуется действие")
+                    .setMessage("Для стабильной работы ByeDPI отключите оптимизацию батареи")
+                    .setPositiveButton("Настройки", (dialog, which) -> {
+                        try {
+                            Intent intent = new Intent();
+                            intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                            intent.setData(Uri.parse("package:" + packageName));
+                            getParentActivity().startActivity(intent);
+                        } catch (Exception e) {
+                            Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                            getParentActivity().startActivity(intent);
+                        }
+                    })
+                    .setNegativeButton("Позже", null)
+                    .show();
+            }
+        }
     }
 
     private void showLoadingDialog() {
@@ -209,11 +271,16 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
                     cell.getCheckBox().setVisibility(View.GONE);
                     cell.setEnabled(true, null);
                 } else if (position == quicRow) {
-                    SpannableStringBuilder title = new SpannableStringBuilder("Обход по QUIC ");
-                    addBadge(title, "SOON", 0xff9e9e9e);
-                    cell.setTextAndCheck(title, false, false);
+                    SpannableStringBuilder title = new SpannableStringBuilder("Встроенный обход (ByeDPI) ");
+                    addBadge(title, "NEW", 0xff4caf50);
+
+                    boolean isByeDpiEnabled = ApplicationLoader.applicationContext
+                            .getSharedPreferences("mengram_settings", 0)
+                            .getBoolean("byedpi_enabled", false);
+
+                    cell.setTextAndCheck(title, isByeDpiEnabled, true);
+                    cell.setEnabled(true, null);
                     cell.getCheckBox().setVisibility(View.VISIBLE);
-                    cell.setEnabled(false, null);
                 }
             } else if (type == 2) {
                 TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
@@ -223,8 +290,8 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
                 } else if (position == cooldownInfoRow) {
                     cell.setText("Если соединение не установится в течение этого времени, Mengram автоматически переключит прокси.");
                     cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                } else if (position == quicInfoRow) {
-                    cell.setText("Использование UDP для маскировки трафика (в разработке).");
+                } else if (position == quicRow + 1) {
+                    cell.setText("Локальный обход блокировок. Не требует внешних прокси и работает быстрее.");
                     cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                 }
             }
@@ -239,7 +306,7 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int pos = holder.getAdapterPosition();
-            return pos == mtprotoRow || pos == cooldownRow;
+            return pos == mtprotoRow || pos == cooldownRow || pos == quicRow;
         }
     }
 }

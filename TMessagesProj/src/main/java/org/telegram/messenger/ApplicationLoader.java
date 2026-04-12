@@ -280,6 +280,7 @@ public class ApplicationLoader extends Application {
 
     @Override
     public void onCreate() {
+        ByeDpiRunner.getInstance().start(applicationContext);
         applicationLoaderInstance = this;
         try {
             applicationContext = getApplicationContext();
