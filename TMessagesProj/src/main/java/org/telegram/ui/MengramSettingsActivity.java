@@ -1,60 +1,70 @@
 package org.telegram.ui;
 
+import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
-import android.os.PowerManager;
-import android.provider.Settings;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Toast;
-
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ByeDpiService;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MengramProxyEngine;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.TypefaceSpan;
-
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MengramSettingsActivity extends BaseFragment implements MengramProxyEngine.ProxyListener {
 
     private RecyclerListView listView;
     private ListAdapter listAdapter;
-    private AlertDialog progressDialog;
 
-    private int mtprotoRow, mtprotoInfoRow;
-    private int cooldownRow, cooldownInfoRow;
-    private int quicRow, quicInfoRow;
+    private int autoProxyRow;
+    private int maskingRow;
+    private int rotationRow;
+    private int turboModeRow;
+    private int autoBypassSectionRow;
+    private int privateDNSRow;
+    private int proxySourceRow;
+    private int importProxyRow;
+    private int networkSectionRow;
+    private int statusInfoRow;
     private int rowCount;
+
+    private String currentProxy = "None";
+    private String currentPing = "0";
+    private String currentStatus = "Idle";
 
     @Override
     public boolean onFragmentCreate() {
         rowCount = 0;
-        mtprotoRow = rowCount++;
-        mtprotoInfoRow = rowCount++;
-        cooldownRow = rowCount++;
-        cooldownInfoRow = rowCount++;
-        quicRow = rowCount++;
-        quicInfoRow = rowCount++;
+        autoProxyRow = rowCount++;
+        maskingRow = rowCount++;
+        rotationRow = rowCount++;
+        turboModeRow = rowCount++;
+        autoBypassSectionRow = rowCount++;
+        privateDNSRow = rowCount++;
+        proxySourceRow = rowCount++;
+        importProxyRow = rowCount++;
+        networkSectionRow = rowCount++;
+        statusInfoRow = rowCount++;
+        MengramProxyEngine.getInstance().setListener(this);
         return super.onFragmentCreate();
     }
 
@@ -75,49 +85,26 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
         listView.setAdapter(listAdapter);
 
         listView.setOnItemClickListener((view, position, x, y) -> {
-            if (position == mtprotoRow) {
-                boolean isEnabled = MengramProxyEngine.isMTProtoEnabled();
-                if (!isEnabled) {
-
-                    MengramProxyEngine.getInstance().setListener(this);
-
-                    showLoadingDialog();
-
-                    MengramProxyEngine.toggleMTProto(true);
-                } else {
-                    MengramProxyEngine.toggleMTProto(false);
-                    listAdapter.notifyItemChanged(mtprotoRow);
-                }
-            } else if (position == cooldownRow) {
-                showCooldownDialog();
-            } else if (position == quicRow) {
-                boolean isEnabled = !ApplicationLoader.applicationContext
-                        .getSharedPreferences("mengram_settings", 0)
-                        .getBoolean("byedpi_enabled", false);
-
-                ApplicationLoader.applicationContext
-                        .getSharedPreferences("mengram_settings", 0)
-                        .edit()
-                        .putBoolean("byedpi_enabled", isEnabled)
-                        .apply();
-
-                if (isEnabled) {
-                    checkBatteryOptimization();
-
-                    Intent intent = new Intent(context, ByeDpiService.class);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        context.startForegroundService(intent);
-                    } else {
-                        context.startService(intent);
-                    }
-
-                    Toast.makeText(context, "Обход (DPI Jammer) включен", Toast.LENGTH_SHORT).show();
-                } else {
-                    context.stopService(new Intent(context, ByeDpiService.class));
-                    Toast.makeText(context, "Обход выключен", Toast.LENGTH_SHORT).show();
-                }
-
-                listAdapter.notifyItemChanged(quicRow);
+            if (position == autoProxyRow) {
+                boolean enabled = !MengramProxyEngine.isMTProtoEnabled();
+                MengramProxyEngine.toggleMTProto(enabled);
+                listAdapter.notifyItemChanged(autoProxyRow);
+            } else if (position == maskingRow) {
+                showMaskingDialog();
+            } else if (position == rotationRow) {
+                showRotationDialog();
+            } else if (position == turboModeRow) {
+                boolean enabled = !MengramProxyEngine.isTurboModeEnabled();
+                MengramProxyEngine.setTurboMode(enabled);
+                listAdapter.notifyItemChanged(turboModeRow);
+            } else if (position == privateDNSRow) {
+                boolean enabled = !MengramProxyEngine.isDoHEnabled();
+                MengramProxyEngine.setDoHEnabled(enabled);
+                listAdapter.notifyItemChanged(privateDNSRow);
+            } else if (position == proxySourceRow) {
+                showProxySourceDialog();
+            } else if (position == importProxyRow) {
+                openFilePicker();
             }
         });
 
@@ -128,98 +115,112 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
         return fragmentView;
     }
 
-    private void checkBatteryOptimization() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PowerManager pm = (PowerManager) getParentActivity().getSystemService(Context.POWER_SERVICE);
-            String packageName = getParentActivity().getPackageName();
-
-            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                new AlertDialog.Builder(getParentActivity())
-                    .setTitle("Требуется действие")
-                    .setMessage("Для стабильной работы ByeDPI отключите оптимизацию батареи")
-                    .setPositiveButton("Настройки", (dialog, which) -> {
-                        try {
-                            Intent intent = new Intent();
-                            intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                            intent.setData(Uri.parse("package:" + packageName));
-                            getParentActivity().startActivity(intent);
-                        } catch (Exception e) {
-                            Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
-                            getParentActivity().startActivity(intent);
-                        }
-                    })
-                    .setNegativeButton("Позже", null)
-                    .show();
-            }
-        }
-    }
-
-    private void showLoadingDialog() {
-        progressDialog = new AlertDialog(getParentActivity(), 3);
-        progressDialog.setMessage("Магия Mengram: ищем лучший FakeTLS...");
-        progressDialog.setCanCancel(false);
-        
-
-        progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, "Отмена", (dialog, which) -> {
-            MengramProxyEngine.getInstance().cancelSearch();
-            dialog.dismiss();
-
-            listAdapter.notifyItemChanged(mtprotoRow);
-        });
-        
-        showDialog(progressDialog);
-    }
-
-    private void showCooldownDialog() {
+    private void showMaskingDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setTitle("Время ожидания (кулдаун)");
-
-        String[] options = {"10 секунд", "15 секунд (рекомендуется)", "30 секунд", "1 минута"};
-        int[] values = {10, 15, 30, 60};
-
+        builder.setTitle("Маскировка");
+        String[] options = {"Google", "Microsoft", "Apple"};
         builder.setItems(options, (dialog, which) -> {
-            MengramProxyEngine.setRotationCooldown(values[which]);
-            listAdapter.notifyItemChanged(cooldownRow);
+            MengramProxyEngine.setMasking(options[which]);
+            listAdapter.notifyItemChanged(maskingRow);
         });
         showDialog(builder.create());
     }
 
+    private void showRotationDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle("Кулдаун ротации");
+        String[] options = {"10s", "15s", "30s", "60s"};
+        int[] values = {10, 15, 30, 60};
+        builder.setItems(options, (dialog, which) -> {
+            MengramProxyEngine.setRotationCooldown(values[which]);
+            listAdapter.notifyItemChanged(rotationRow);
+        });
+        showDialog(builder.create());
+    }
+
+    private void showProxySourceDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle("Источник прокси");
+        String[] options = {"Standard", "Custom"};
+        builder.setItems(options, (dialog, which) -> {
+            if (which == 1) {
+                showCustomSourceDialog();
+            } else {
+                MengramProxyEngine.setProxySource(0);
+                listAdapter.notifyItemChanged(proxySourceRow);
+            }
+        });
+        showDialog(builder.create());
+    }
+
+    private void showCustomSourceDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle("Custom Source URL");
+        org.telegram.ui.Components.EditTextBoldCursor editText = new org.telegram.ui.Components.EditTextBoldCursor(getParentActivity());
+        editText.setTextSize(1, 18);
+        editText.setText(MengramProxyEngine.getCustomSourceUrl());
+        editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        editText.setHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+        editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        editText.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(12), AndroidUtilities.dp(24), AndroidUtilities.dp(12));
+        builder.setView(editText);
+        builder.setPositiveButton("Save", (dialog, which) -> {
+            MengramProxyEngine.setCustomSourceUrl(editText.getText().toString());
+            MengramProxyEngine.setProxySource(1);
+            listAdapter.notifyItemChanged(proxySourceRow);
+        });
+        builder.setNegativeButton("Cancel", null);
+        showDialog(builder.create());
+    }
+
+    private void openFilePicker() {
+        try {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("text/plain");
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            startActivityForResult(intent, 1);
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 1 && resultCode == Activity.RESULT_OK && data != null) {
+            Uri uri = data.getData();
+            if (uri != null) {
+                try (InputStream inputStream = getParentActivity().getContentResolver().openInputStream(uri);
+                     BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                    List<String> lines = new ArrayList<>();
+                    String line;
+                    while ((line = reader.readLine()) != null) lines.add(line);
+                    MengramProxyEngine.getInstance().addProxiesFromList(lines);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                    Toast.makeText(getParentActivity(), "Failed to read the proxy list file", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(getParentActivity(), "Failed to read the proxy list file", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     @Override
     public void onProgress(int found, int total) {
-
-        if (progressDialog != null) {
-            progressDialog.setMessage("Проверено: " + total + " | Живых: " + found);
-        }
+        currentStatus = "Searching (" + found + "/" + total + ")";
+        if (listAdapter != null) listAdapter.notifyItemChanged(statusInfoRow);
     }
 
     @Override
     public void onProxyFound(MengramProxyEngine.ProxyInfo proxy) {
-        if (progressDialog != null) {
-            progressDialog.dismiss();
-            progressDialog = null;
-        }
-
-
-        try {
-            if (fragmentView != null) {
-                AndroidUtilities.vibrateCursor(fragmentView);
-            }
-        } catch (Exception ignored) {}
-
-        Toast.makeText(getParentActivity(), "Подключено! Пинг: " + proxy.pingMs + "ms", Toast.LENGTH_SHORT).show();
-
-
-        listAdapter.notifyItemChanged(mtprotoRow);
+        currentProxy = proxy.server;
+        currentPing = String.valueOf(proxy.pingMs);
+        currentStatus = "Stable";
+        if (listAdapter != null) listAdapter.notifyItemChanged(statusInfoRow);
     }
 
     @Override
     public void onProxyError(String message) {
-        if (progressDialog != null) {
-            progressDialog.dismiss();
-            progressDialog = null;
-        }
-        Toast.makeText(getParentActivity(), "Ошибка: " + message, Toast.LENGTH_LONG).show();
-        listAdapter.notifyItemChanged(mtprotoRow);
+        currentStatus = "Error: " + message;
+        if (listAdapter != null) listAdapter.notifyItemChanged(statusInfoRow);
     }
 
     @Override
@@ -237,15 +238,19 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
 
         @Override
         public int getItemViewType(int position) {
-            if (position == mtprotoRow || position == cooldownRow || position == quicRow) return 1;
+            if (position == autoProxyRow || position == turboModeRow || position == privateDNSRow) return 0;
+            if (position == maskingRow || position == rotationRow || position == proxySourceRow || position == importProxyRow) return 1;
             return 2;
         }
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view;
-            if (viewType == 1) {
+            if (viewType == 0) {
                 view = new TextCheckCell(mContext);
+                view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            } else if (viewType == 1) {
+                view = new TextSettingsCell(mContext);
                 view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             } else {
                 view = new TextInfoPrivacyCell(mContext);
@@ -256,57 +261,46 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             int type = holder.getItemViewType();
-
-            if (type == 1) {
+            if (type == 0) {
                 TextCheckCell cell = (TextCheckCell) holder.itemView;
-                if (position == mtprotoRow) {
-                    SpannableStringBuilder title = new SpannableStringBuilder("Авто-прокси MTProto ");
-                    addBadge(title, "BETA", 0xff2196f3);
-                    cell.setTextAndCheck(title, MengramProxyEngine.isMTProtoEnabled(), true);
-                    cell.setEnabled(true, null);
-                    cell.getCheckBox().setVisibility(View.VISIBLE);
-                } else if (position == cooldownRow) {
-                    int seconds = MengramProxyEngine.getRotationCooldown();
-                    cell.setTextAndCheck("Кулдаун ротации: " + seconds + "с", false, false);
-                    cell.getCheckBox().setVisibility(View.GONE);
-                    cell.setEnabled(true, null);
-                } else if (position == quicRow) {
-                    SpannableStringBuilder title = new SpannableStringBuilder("Встроенный обход (ByeDPI) ");
-                    addBadge(title, "NEW", 0xff4caf50);
-
-                    boolean isByeDpiEnabled = ApplicationLoader.applicationContext
-                            .getSharedPreferences("mengram_settings", 0)
-                            .getBoolean("byedpi_enabled", false);
-
-                    cell.setTextAndCheck(title, isByeDpiEnabled, true);
-                    cell.setEnabled(true, null);
-                    cell.getCheckBox().setVisibility(View.VISIBLE);
+                if (position == autoProxyRow) {
+                    cell.setTextAndCheck("Авто-подбор прокси", MengramProxyEngine.isMTProtoEnabled(), true);
+                } else if (position == turboModeRow) {
+                    cell.setTextAndCheck("Турбо-режим (ротация)", MengramProxyEngine.isTurboModeEnabled(), false);
+                } else if (position == privateDNSRow) {
+                    cell.setTextAndCheck("Приватный DNS (DoH)", MengramProxyEngine.isDoHEnabled(), true);
+                }
+            } else if (type == 1) {
+                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                if (position == maskingRow) {
+                    cell.setTextAndValue("Маскировка", MengramProxyEngine.getMasking(), true);
+                } else if (position == rotationRow) {
+                    cell.setTextAndValue("Кулдаун ротации", MengramProxyEngine.getRotationCooldown() + "s", true);
+                } else if (position == proxySourceRow) {
+                    String val = MengramProxyEngine.getProxySource() == 0 ? "Standard" : "Custom";
+                    cell.setTextAndValue("Источник прокси", val, true);
+                } else if (position == importProxyRow) {
+                    cell.setText("Импорт списка (.txt)", false);
                 }
             } else if (type == 2) {
                 TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
-                if (position == mtprotoInfoRow) {
-                    cell.setText("Автоматический подбор быстрых FakeTLS прокси для стабильной связи.");
+                if (position == autoBypassSectionRow) {
+                    cell.setText("Настройка автоматического обхода через MTProto и FakeTLS.");
                     cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                } else if (position == cooldownInfoRow) {
-                    cell.setText("Если соединение не установится в течение этого времени, Mengram автоматически переключит прокси.");
+                } else if (position == networkSectionRow) {
+                    cell.setText("Управление сетевыми ресурсами и внешними источниками.");
                     cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                } else if (position == quicRow + 1) {
-                    cell.setText("Локальный обход блокировок. Не требует внешних прокси и работает быстрее.");
+                } else if (position == statusInfoRow) {
+                    cell.setText(String.format("Прокси: %s | Пинг: %sms | Статус: %s", currentProxy, currentPing, currentStatus));
                     cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                 }
             }
         }
 
-        private void addBadge(SpannableStringBuilder builder, String text, int color) {
-            int start = builder.length();
-            builder.append(text);
-            builder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), AndroidUtilities.dp(11), color), start, builder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int pos = holder.getAdapterPosition();
-            return pos == mtprotoRow || pos == cooldownRow || pos == quicRow;
+            return pos != autoBypassSectionRow && pos != networkSectionRow && pos != statusInfoRow;
         }
     }
 }

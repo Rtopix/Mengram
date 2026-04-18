@@ -12466,8 +12466,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 blur3_InvalidateBlur();
             }
 
-            final GradientProtectionDrawable gradientDrawable = new GradientProtectionDrawable(WindowInsetsCompat.Side.TOP);
-            final GradientProtectionDrawable gradientDrawable2 = new GradientProtectionDrawable(WindowInsetsCompat.Side.BOTTOM);
+            final GradientProtectionDrawable gradientDrawable = new GradientProtectionDrawable(2);
+            final GradientProtectionDrawable gradientDrawable2 = new GradientProtectionDrawable(8);
 
             @Override
             protected void dispatchDraw(@NonNull Canvas canvas) {
