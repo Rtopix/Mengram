@@ -19,6 +19,7 @@ configurations.all {
 
 dependencies {
     implementation 'androidx.core:core:1.15.0'
+    implementation files('libs/tgwsproxy.aar')
     implementation 'androidx.core:core-ktx:1.15.0'
     implementation "androidx.preference:preference:1.2.1"
     implementation 'androidx.palette:palette:1.0.0'

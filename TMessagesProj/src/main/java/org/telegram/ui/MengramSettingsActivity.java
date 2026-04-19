@@ -3,16 +3,25 @@ package org.telegram.ui;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MengramProxyEngine;
+import org.telegram.messenger.MengramProxyService;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -35,6 +44,7 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
     private RecyclerListView listView;
     private ListAdapter listAdapter;
 
+    private int wssProxyRow;
     private int autoProxyRow;
     private int maskingRow;
     private int rotationRow;
@@ -54,6 +64,7 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
     @Override
     public boolean onFragmentCreate() {
         rowCount = 0;
+        wssProxyRow = rowCount++;
         autoProxyRow = rowCount++;
         maskingRow = rowCount++;
         rotationRow = rowCount++;
@@ -85,7 +96,46 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
         listView.setAdapter(listAdapter);
 
         listView.setOnItemClickListener((view, position, x, y) -> {
-            if (position == autoProxyRow) {
+            if (position == wssProxyRow) {
+                SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("mengram_settings", 0);
+                boolean wasEnabled = prefs.getBoolean("wss_proxy_enabled", false);
+                boolean newState = !wasEnabled;
+
+                prefs.edit().putBoolean("wss_proxy_enabled", newState).apply();
+
+                Intent intent = new Intent(getParentActivity(), MengramProxyService.class);
+                if (newState) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        getParentActivity().startForegroundService(intent);
+                    } else {
+                        getParentActivity().startService(intent);
+                    }
+                } else {
+                    getParentActivity().stopService(intent);
+
+                    try {
+                        SharedPreferences mainPrefs = MessagesController.getGlobalMainSettings();
+                        mainPrefs.edit()
+                                .putBoolean("proxy_enabled", false)
+                                .putBoolean("proxy_enabled_calls", false)
+                                .putString("proxy_ip", "")
+                                .putInt("proxy_port", 0)
+                                .putString("proxy_user", "")
+                                .putString("proxy_pass", "")
+                                .putString("proxy_secret", "")
+                                .commit();
+
+                        NotificationCenter.getGlobalInstance()
+                                .postNotificationName(NotificationCenter.proxySettingsChanged);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+
+                    ConnectionsManager.setProxySettings(false, "", 0, "", "", "");
+                }
+
+                listAdapter.notifyItemChanged(wssProxyRow);
+            } else if (position == autoProxyRow) {
                 boolean enabled = !MengramProxyEngine.isMTProtoEnabled();
                 MengramProxyEngine.toggleMTProto(enabled);
                 listAdapter.notifyItemChanged(autoProxyRow);
@@ -238,7 +288,7 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
 
         @Override
         public int getItemViewType(int position) {
-            if (position == autoProxyRow || position == turboModeRow || position == privateDNSRow) return 0;
+            if (position == wssProxyRow || position == autoProxyRow || position == turboModeRow || position == privateDNSRow) return 0;
             if (position == maskingRow || position == rotationRow || position == proxySourceRow || position == importProxyRow) return 1;
             return 2;
         }
@@ -263,7 +313,12 @@ public class MengramSettingsActivity extends BaseFragment implements MengramProx
             int type = holder.getItemViewType();
             if (type == 0) {
                 TextCheckCell cell = (TextCheckCell) holder.itemView;
-                if (position == autoProxyRow) {
+                if (position == wssProxyRow) {
+                    boolean isEnabled = ApplicationLoader.applicationContext
+                            .getSharedPreferences("mengram_settings", 0)
+                            .getBoolean("wss_proxy_enabled", false);
+                    cell.setTextAndCheck("WSS-прокси (CloudFlare)", isEnabled, true);
+                } else if (position == autoProxyRow) {
                     cell.setTextAndCheck("Авто-подбор прокси", MengramProxyEngine.isMTProtoEnabled(), true);
                 } else if (position == turboModeRow) {
                     cell.setTextAndCheck("Турбо-режим (ротация)", MengramProxyEngine.isTurboModeEnabled(), false);
