@@ -14,6 +14,7 @@ import static org.telegram.messenger.AndroidUtilities.replaceSingleTag;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.messenger.MessagesController.findUpdatesAndRemove;
+import org.telegram.messenger.MengramProxyService;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -531,10 +532,20 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         getNotificationCenter().addObserver(this, NotificationCenter.didUpdateConnectionState);
         getNotificationCenter().addObserver(this, NotificationCenter.newSuggestionsAvailable);
 
-        android.content.SharedPreferences preferences = org.telegram.messenger.MessagesController.getGlobalMainSettings();
-        if (!preferences.getBoolean("proxy_enabled", false)) {
-            org.telegram.messenger.MengramProxyEngine.getInstance().refreshProxyList();
+        //android.content.SharedPreferences preferences = org.telegram.messenger.MessagesController.getGlobalMainSettings();
+        //if (!preferences.getBoolean("proxy_enabled", false)) {
+            //org.telegram.messenger.MengramProxyEngine.getInstance().refreshProxyList();
+        //}
+
+        if (!MengramProxyService.isServiceRunning) {
+            Intent intent = new Intent(ApplicationLoader.applicationContext, MengramProxyService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                ApplicationLoader.applicationContext.startForegroundService(intent);
+            } else {
+                ApplicationLoader.applicationContext.startService(intent);
+            }
         }
+
 
         return super.onFragmentCreate();
     }
@@ -1601,6 +1612,20 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void needFinishActivity(boolean afterSignup, boolean showSetPasswordConfirm, int otherwiseRelogin) {
+
+        ApplicationLoader.applicationContext.stopService(
+                new Intent(ApplicationLoader.applicationContext, MengramProxyService.class)
+        );
+        ApplicationLoader.applicationContext
+                .getSharedPreferences("mengram_settings", 0)
+                .edit().putBoolean("wss_proxy_enabled", false).apply();
+
+        if (getParentActivity() != null) {
+            AndroidUtilities.setLightStatusBar(getParentActivity().getWindow(), false);
+        }
+        clearCurrentState();
+
+
         if (getParentActivity() != null) {
             AndroidUtilities.setLightStatusBar(getParentActivity().getWindow(), false);
         }

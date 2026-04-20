@@ -3470,6 +3470,7 @@ public class MessageObject {
         }
 
         int[] emojiOnly = allowsBigEmoji() ? new int[1] : null;
+
         messageText = Emoji.replaceEmoji(messageText, paint.getFontMetricsInt(), false, emojiOnly);
         messageText = replaceAnimatedEmoji(messageText, paint.getFontMetricsInt());
         if (emojiOnly != null && emojiOnly[0] > 1) {
@@ -3683,11 +3684,15 @@ public class MessageObject {
         }
         messageText = text;
         final ArrayList<TLRPC.MessageEntity> entities = getEntities();
+
         final TextPaint paint;
         if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaGame) {
             paint = Theme.chat_msgGameTextPaint;
         } else {
             paint = Theme.chat_msgTextPaint;
+        }
+        if (messageText != null) {
+            messageText = ZalgoFilter.filter(messageText.toString());
         }
         int[] emojiOnly = allowsBigEmoji() ? new int[1] : null;
         messageText = Emoji.replaceEmoji(messageText, paint.getFontMetricsInt(), false, emojiOnly);

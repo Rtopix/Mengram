@@ -19,6 +19,7 @@ configurations.all {
 
 dependencies {
     implementation 'androidx.core:core:1.15.0'
+    implementation files('libs/tgwsproxy.aar')
     implementation 'androidx.core:core-ktx:1.15.0'
     implementation "androidx.preference:preference:1.2.1"
     implementation 'androidx.palette:palette:1.0.0'
@@ -75,6 +76,17 @@ dependencies {
 }
 
 def isWindows = String.valueOf(DefaultNativePlatform.currentOperatingSystem.toFamilyName() == OperatingSystemFamily.WINDOWS)
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
+}
+
+// Получаем значения и проверяем их. Если в файле пусто - ставим заглушки.
+def appIdValue = localProperties.getProperty('APP_ID') ?: "0"
+def appHashValue = localProperties.getProperty('APP_HASH') ?: ""
+
 android {
     compileSdkVersion 35
     buildToolsVersion '35.0.0'
@@ -109,6 +121,9 @@ android {
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
         multiDexEnabled true
+
+        //buildConfigField "int", "APP_ID", "${appIdValue}"
+        //buildConfigField "String", "APP_HASH", "\"${appHashValue}\""
 
         externalNativeBuild {
             cmake {
