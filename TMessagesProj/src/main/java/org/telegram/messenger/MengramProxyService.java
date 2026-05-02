@@ -241,11 +241,14 @@ public class MengramProxyService extends Service {
                 if (state == ConnectionsManager.ConnectionStateConnected || state == ConnectionsManager.ConnectionStateUpdating) {
                     lastConnectedTime = System.currentTimeMillis();
                     watchdogRestartCount = 0;
+                } else if (state == ConnectionsManager.ConnectionStateWaitingForNetwork) {
+                    lastConnectedTime = System.currentTimeMillis();
                 } else {
                     long elapsed = System.currentTimeMillis() - lastConnectedTime;
-                    if (elapsed > getWatchdogTimeout() * 1000L && watchdogRestartCount < WATCHDOG_MAX_RESTARTS) {
+                    if (elapsed > getWatchdogTimeout() * 1000L) {
                         watchdogRestartCount++;
                         Log.d("MengramProxy", "Watchdog: соединение зависло " + (elapsed / 1000) + "s, перезапуск #" + watchdogRestartCount);
+                        lastConnectedTime = System.currentTimeMillis();
                         restartEngine();
                     }
                 }
