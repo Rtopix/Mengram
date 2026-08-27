@@ -88,7 +88,8 @@ public class WindowInsetsStateHolder implements WindowInsetsProvider, WindowInse
     private void setInsets(@Nullable WindowInsetsCompat insets, boolean animated) {
         this.lastInsets = insets;
 
-        final Insets systemInsets = insets != null ? insets.getInsets(WindowInsetsCompat.Type.systemBars()) : Insets.NONE;
+        final int insetsType = WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout();
+        final Insets systemInsets = insets != null ? insets.getInsetsIgnoringVisibility(insetsType) : Insets.NONE;
         final Insets imeInsets = insets != null ? insets.getInsets(WindowInsetsCompat.Type.ime()) : Insets.NONE;
 
         final KeyboardState.State oldKeyboardState = keyboardState.getState();
@@ -225,6 +226,10 @@ public class WindowInsetsStateHolder implements WindowInsetsProvider, WindowInse
             resetInAppKeyboardHeight(false);
         }
     };
+
+    public int getInAppKeyboardHeight() {
+        return inAppKeyboardHeight;
+    }
 
     @Override
     public void resetInAppKeyboardHeight(boolean waitKeyboardOpen) {
