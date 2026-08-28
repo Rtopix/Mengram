@@ -2266,7 +2266,7 @@ public class ActionBarMenuItem extends FrameLayout {
             super.dispatchDraw(canvas);
             /*if (isCommunity && mDrawGradient) {
                 if (mGradientProtectionDrawable == null) {
-                    mGradientProtectionDrawable = new GradientProtectionDrawable(WindowInsetsCompat.Side.RIGHT);
+                    mGradientProtectionDrawable = new GradientProtectionDrawable(GradientProtectionDrawable.RIGHT);
                 }
                 mGradientProtectionDrawable.setColor(mBackgroundColor);
                 mGradientProtectionDrawable.setBounds(getWidth() - dp(18), dp(3), getWidth() - dp(8), getHeight() - dp(3));

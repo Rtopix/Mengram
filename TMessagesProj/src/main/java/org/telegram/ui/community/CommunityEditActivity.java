@@ -163,8 +163,8 @@ public class CommunityEditActivity extends BaseFragment implements ImageUpdater.
         actionBar.setGlassOnlyBack();
 
         containerView = new FrameLayout(context) {
-            final GradientProtectionDrawable gradientProtectionDrawable = new GradientProtectionDrawable(WindowInsetsCompat.Side.TOP);
-            final GradientProtectionDrawable gradientProtectionDrawableBottom = new GradientProtectionDrawable(WindowInsetsCompat.Side.BOTTOM);
+            final GradientProtectionDrawable gradientProtectionDrawable = new GradientProtectionDrawable(GradientProtectionDrawable.TOP);
+            final GradientProtectionDrawable gradientProtectionDrawableBottom = new GradientProtectionDrawable(GradientProtectionDrawable.BOTTOM);
 
             @Override
             protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {

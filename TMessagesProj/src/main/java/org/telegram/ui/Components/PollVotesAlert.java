@@ -797,7 +797,7 @@ public class PollVotesAlert extends BottomSheet {
         containerView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
 
         listView = new RecyclerListView(context) {
-            private final GradientProtectionDrawable gradientProtectionDrawable = new GradientProtectionDrawable(WindowInsetsCompat.Side.BOTTOM);
+            private final GradientProtectionDrawable gradientProtectionDrawable = new GradientProtectionDrawable(GradientProtectionDrawable.BOTTOM);
 
             long lastUpdateTime;
 

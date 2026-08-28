@@ -221,8 +221,8 @@ public class CountrySelectBottomSheet extends BottomSheetWithRecyclerListView im
         });
 
         searchContainer = new FrameLayout(context) {
-            final GradientProtectionDrawable gradientProtectionDrawableTop = new GradientProtectionDrawable(WindowInsetsCompat.Side.TOP);
-            final GradientProtectionDrawable gradientProtectionDrawableBottom = new GradientProtectionDrawable(WindowInsetsCompat.Side.BOTTOM);
+            final GradientProtectionDrawable gradientProtectionDrawableTop = new GradientProtectionDrawable(GradientProtectionDrawable.TOP);
+            final GradientProtectionDrawable gradientProtectionDrawableBottom = new GradientProtectionDrawable(GradientProtectionDrawable.BOTTOM);
 
             @Override
             protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
@@ -274,7 +274,7 @@ public class CountrySelectBottomSheet extends BottomSheetWithRecyclerListView im
         itemAnimator.setSupportsChangeAnimations(false);
         recyclerListView.setItemAnimator(itemAnimator);
         recyclerListView.addItemDecoration(new RecyclerView.ItemDecoration() {
-            final GradientProtectionDrawable gradientProtectionDrawable = new GradientProtectionDrawable(WindowInsetsCompat.Side.TOP);
+            final GradientProtectionDrawable gradientProtectionDrawable = new GradientProtectionDrawable(GradientProtectionDrawable.TOP);
 
             @Override
             public void onDrawOver(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {

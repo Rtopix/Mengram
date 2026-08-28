@@ -17,7 +17,7 @@ import org.telegram.ui.ActionBar.Theme;
 @SuppressLint("ViewConstructor")
 public class FoundStickerPackButtonContainer extends FrameLayout {
     private final Theme.ResourcesProvider resourcesProvider;
-    private final GradientProtectionDrawable gradientProtectionDrawable = new GradientProtectionDrawable(WindowInsetsCompat.Side.BOTTOM);
+    private final GradientProtectionDrawable gradientProtectionDrawable = new GradientProtectionDrawable(GradientProtectionDrawable.BOTTOM);
 
     public FoundStickerPackButtonContainer(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);

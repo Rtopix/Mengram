@@ -7584,6 +7584,12 @@ public class Theme {
                             if ((idx = line.indexOf('=')) != -1) {
                                 String key = line.substring(0, idx);
                                 String param = line.substring(idx + 1);
+                                if (!param.isEmpty() && param.charAt(param.length() - 1) == '\r') {
+                                    param = param.substring(0, param.length() - 1);
+                                }
+                                if (!key.isEmpty() && key.charAt(key.length() - 1) == '\r') {
+                                    key = key.substring(0, key.length() - 1);
+                                }
                                 int value;
                                 if (param.length() > 0 && param.charAt(0) == '#') {
                                     try {

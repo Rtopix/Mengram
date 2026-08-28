@@ -132,8 +132,8 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
     private final UniversalRecyclerView foundChatsView;
     private final FadeView communityPageFadeView;
     private final FadeView chatsPageFadeView;
-    private final GradientProtectionDrawable gradientProtectionDrawableTop = new GradientProtectionDrawable(WindowInsetsCompat.Side.TOP);
-    private final GradientProtectionDrawable gradientProtectionDrawableBottom = new GradientProtectionDrawable(WindowInsetsCompat.Side.BOTTOM);
+    private final GradientProtectionDrawable gradientProtectionDrawableTop = new GradientProtectionDrawable(GradientProtectionDrawable.TOP);
+    private final GradientProtectionDrawable gradientProtectionDrawableBottom = new GradientProtectionDrawable(GradientProtectionDrawable.BOTTOM);
 
     private final View fakeAnchorView;
 
